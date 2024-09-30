@@ -46,7 +46,7 @@ module "security_group_dataexfiltration_one" {
       to_port     = -1
       protocol    = "icmp"
       description = "User-service ports"
-      cidr_blocks = "10.0.0.0/24"
+      cidr_blocks = "10.0.0.0/16"
   }]
 }
 
@@ -64,6 +64,6 @@ module "security_group_dataexfiltration_two" {
       to_port     = -1
       protocol    = "icmp"
       description = "User-service ports"
-      cidr_blocks = "10.0.0.0/24"
+      cidr_blocks = "10.0.0.0/16"
   }]
 }
