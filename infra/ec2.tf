@@ -1,4 +1,4 @@
-module "ec2_instance_dataexfiltration" {
+module "ec2_instance_dataexfiltration_one" {
   source = "terraform-aws-modules/ec2-instance/aws"
 
   name = "ec2-${var.prefix}-one"
