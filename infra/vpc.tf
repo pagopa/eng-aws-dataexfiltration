@@ -45,14 +45,14 @@ module "vpc_endpoints_dataexfiltration" {
   }
 }
 
-module "vpc_endpoints" {
+module "vpc_endpoints_s3" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "5.13.0"
 
   vpc_id = module.vpc_dataexfiltration.vpc_id
 
   create_security_group      = true
-  security_group_name_prefix = "${var.prefix}-vpc-endpoints-"
+  security_group_name_prefix = "${var.prefix}-vpc-endpoints-s3-"
   security_group_description = "VPC endpoint security group"
   security_group_rules = {
     ingress_https = {
@@ -64,10 +64,38 @@ module "vpc_endpoints" {
   endpoints = {
     s3 = {
       service             = "s3"
+      tags                = { Name = "s3-vpc-endpoint" }
       private_dns_enabled = true
       dns_options = {
         private_dns_only_for_inbound_resolver_endpoint = false
+      },
+      dynamodb = {
+        service         = "dynamodb"
+        service_type    = "Gateway"
+        route_table_ids = flatten([module.vpc_dataexfiltration.private_route_table_ids, module.vpc_dataexfiltration.public_route_table_ids])
+        policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
+        tags            = { Name = "dynamodb-vpc-endpoint" }
       }
+    }
+  }
+}
+
+data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
+  statement {
+    effect    = "Deny"
+    actions   = ["dynamodb:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:sourceVpc"
+
+      values = [module.vpc_dataexfiltration.vpc_id]
     }
   }
 }
