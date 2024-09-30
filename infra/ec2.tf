@@ -1,5 +1,6 @@
 module "ec2_instance_dataexfiltration" {
-  source = "terraform-aws-modules/ec2-instance/aws"
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "5.7.0"
 
   name = "ec2-${var.prefix}-one"
 
@@ -18,7 +19,8 @@ module "ec2_instance_dataexfiltration" {
 }
 
 module "ec2_instance_dataexfiltration_two" {
-  source = "terraform-aws-modules/ec2-instance/aws"
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "5.7.0"
 
   name = "ec2-${var.prefix}-two"
 
