@@ -7,24 +7,6 @@ locals {
   vpc_cidr   = "10.0.0.0/16"
   num_azs    = 3
   azs        = slice(data.aws_availability_zones.available.names, 0, local.num_azs)
-
-  subnet_mapping_public = {
-    for i in range(0, local.num_azs) :
-    "subnet-public-${i}" => {
-      subnet_id       = element(module.vpc_dataexfiltration.public_subnets, i)
-      ip_address_type = "IPV4"
-    }
-  }
-
-  subnet_mapping_private = {
-    for i in range(0, local.num_azs) :
-    "subnet-private-${i}" => {
-      subnet_id       = element(module.vpc_dataexfiltration.private_subnets, i)
-      ip_address_type = "IPV4"
-    }
-  }
-  subnet = merge(local.subnet_mapping_public, local.subnet_mapping_private)
-
 }
 
 module "network_firewall_dataexfiltration" {
@@ -39,8 +21,14 @@ module "network_firewall_dataexfiltration" {
   firewall_policy_change_protection = false
   subnet_change_protection          = false
 
-  vpc_id         = module.vpc_dataexfiltration.vpc_id
-  subnet_mapping = local.subnet
+  vpc_id = module.vpc_dataexfiltration.vpc_id
+  subnet_mapping = {
+    for i in range(0, local.num_azs) :
+    "subnet-private-${i}" => {
+      subnet_id       = element(module.vpc_dataexfiltration.private_subnets, i)
+      ip_address_type = "IPV4"
+    }
+  }
 
   # Policy
   policy_name        = "${local.project}-firewall-policy"
@@ -65,7 +53,7 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
       rules_source_list = {
         generated_rules_type = "ALLOWLIST"
         target_types         = ["HTTP_HOST"]
-        targets              = [".pagopa.it,pagopa.it"]
+        targets              = [".pagopa.it", "io.italia.it"]
       }
     }
   }
