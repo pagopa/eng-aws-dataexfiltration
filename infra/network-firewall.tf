@@ -1,5 +1,4 @@
 data "aws_caller_identity" "current" {}
-#data "aws_availability_zones" "available" {}
 
 locals {
   region     = "eu-south-1"
@@ -53,7 +52,7 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
       rules_source_list = {
         generated_rules_type = "ALLOWLIST"
         target_types         = ["HTTP_HOST"]
-        targets              = [".pagopa.it", "io.italia.it"]
+        targets              = [".pagopa.it"]
       }
     }
   }
