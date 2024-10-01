@@ -1,6 +1,6 @@
 resource "aws_route53_resolver_firewall_domain_list" "allow_domain_list_dataexfiltration" {
   name    = "allow-list-${local.project}"
-  domains = ["pagopa.it.", "*.pagopa.it.", "io.pagopa.it.", "amazonaws.com.", "*.amazonaws.com.", "*.compute.internal."]
+  domains = ["pagopa.it.", "io.pagopa.it.", "amazonaws.com.", "*.amazonaws.com."]
 }
 
 resource "aws_route53_resolver_firewall_domain_list" "block_domain_list_dataexfiltration" {
