@@ -1,13 +1,5 @@
 data "aws_caller_identity" "current" {}
 
-locals {
-  region     = "eu-south-1"
-  account_id = data.aws_caller_identity.current.account_id
-  vpc_cidr   = "10.0.0.0/16"
-  num_azs    = 3
-  azs        = slice(data.aws_availability_zones.available.names, 0, local.num_azs)
-}
-
 module "network_firewall_dataexfiltration" {
   source  = "terraform-aws-modules/network-firewall/aws"
   version = "1.0.1"
@@ -22,7 +14,7 @@ module "network_firewall_dataexfiltration" {
 
   vpc_id = module.vpc_dataexfiltration.vpc_id
   subnet_mapping = {
-    for i in range(0, local.num_azs) :
+    for i in range(0, 3) :
     "subnet-private-${i}" => {
       subnet_id       = element(module.vpc_dataexfiltration.private_subnets, i)
       ip_address_type = "IPV4"
@@ -60,5 +52,5 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
   # Resource Policy
   create_resource_policy     = true
   attach_resource_policy     = true
-  resource_policy_principals = ["arn:aws:iam::${local.account_id}:root"]
+  resource_policy_principals = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 }
