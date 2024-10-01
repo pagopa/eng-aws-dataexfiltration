@@ -2,7 +2,7 @@ module "ec2_instance_dataexfiltration_one" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "5.7.0"
 
-  name = "ec2-${var.prefix}-one"
+  name = "${local.project}-ec2-one"
 
   instance_type = "t3.micro"
   ami           = "ami-06d4fa1e7c1b6d9b7"
@@ -22,7 +22,7 @@ module "ec2_instance_dataexfiltration_two" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "5.7.0"
 
-  name = "ec2-${var.prefix}-two"
+  name = "${local.project}-ec2-two"
 
   instance_type = "t3.micro"
   ami           = "ami-06d4fa1e7c1b6d9b7"
@@ -36,7 +36,7 @@ module "security_group_dataexfiltration_one" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
-  name         = "${var.prefix}-ec2-one"
+  name         = "${local.project}-securitygroup-ec2-one"
   description  = "Security Group for EC2 Instance Egress"
   vpc_id       = module.vpc_dataexfiltration.vpc_id
   egress_rules = ["https-443-tcp"]
@@ -54,7 +54,7 @@ module "security_group_dataexfiltration_two" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
-  name        = "${var.prefix}-ec2-two"
+  name        = "${local.project}-securitygroup-ec2-two"
   description = "Security Group for second EC2 Instance Egress"
   vpc_id      = module.vpc_dataexfiltration.vpc_id
 

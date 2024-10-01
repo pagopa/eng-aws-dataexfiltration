@@ -3,15 +3,16 @@ data "aws_availability_zones" "available" {
 }
 
 module "vpc_dataexfiltration" {
-  source                       = "terraform-aws-modules/vpc/aws"
-  version                      = "5.1.2"
-  name                         = var.prefix
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.1.2"
+
+  name                         = local.project
   cidr                         = "10.0.0.0/16"
   azs                          = data.aws_availability_zones.available.names
   private_subnets              = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  private_subnet_names         = ["${var.prefix}_private_1", "${var.prefix}_private_2", "${var.prefix}_private_3"]
+  private_subnet_names         = ["${local.project}-private-1", "${local.project}-private-2", "${local.project}-private-3"]
   public_subnets               = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-  public_subnet_names          = ["${var.prefix}_public_1", "${var.prefix}_public_2", "${var.prefix}_public_3"]
+  public_subnet_names          = ["${local.project}-public-1", "${local.project}-public-2", "${local.project}-public-3"]
   public_dedicated_network_acl = true
   enable_nat_gateway           = true
   single_nat_gateway           = true
@@ -21,7 +22,7 @@ module "vpc_dataexfiltration" {
 
 module "vpc_endpoints_dataexfiltration" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "~> 5.0"
+  version = "5.13.0"
 
   vpc_id = module.vpc_dataexfiltration.vpc_id
 
@@ -35,7 +36,7 @@ module "vpc_endpoints_dataexfiltration" {
   }
 
   create_security_group      = true
-  security_group_name_prefix = "vpc-endpoints-${var.prefix}"
+  security_group_name_prefix = "${local.project}-vpc-endpoints"
   security_group_description = "VPC endpoint security group"
   security_group_rules = {
     ingress_https = {
@@ -45,14 +46,14 @@ module "vpc_endpoints_dataexfiltration" {
   }
 }
 
-module "vpc_endpoints_s3" {
+module "vpc_endpoints_aws" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "5.13.0"
 
   vpc_id = module.vpc_dataexfiltration.vpc_id
 
   create_security_group      = true
-  security_group_name_prefix = "${var.prefix}-vpc-endpoints-s3-"
+  security_group_name_prefix = "${local.project}-vpc-endpoints-aws"
   security_group_description = "VPC endpoint security group"
   security_group_rules = {
     ingress_https = {
@@ -68,14 +69,14 @@ module "vpc_endpoints_s3" {
       private_dns_enabled = true
       dns_options = {
         private_dns_only_for_inbound_resolver_endpoint = false
-      },
-      dynamodb = {
-        service         = "dynamodb"
-        service_type    = "Gateway"
-        route_table_ids = flatten([module.vpc_dataexfiltration.private_route_table_ids, module.vpc_dataexfiltration.public_route_table_ids])
-        policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
-        tags            = { Name = "dynamodb-vpc-endpoint" }
       }
+    },
+    dynamodb = {
+      service         = "dynamodb"
+      service_type    = "Gateway"
+      route_table_ids = flatten([module.vpc_dataexfiltration.private_route_table_ids, module.vpc_dataexfiltration.public_route_table_ids])
+      policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
+      tags            = { Name = "dynamodb-vpc-endpoint" }
     }
   }
 }
