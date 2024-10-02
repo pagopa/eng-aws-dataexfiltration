@@ -1,6 +1,6 @@
 data "aws_subnets" "firewall" {
   filter {
-    name   = "tag:Name"
+    name = "tag:Name"
     values = [
       "${local.project}-public-fw-1",
       "${local.project}-public-fw-2",
