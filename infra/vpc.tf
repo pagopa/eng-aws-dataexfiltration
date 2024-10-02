@@ -1,18 +1,36 @@
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 module "vpc_dataexfiltration" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.1.2"
 
-  name                         = local.project
-  cidr                         = "10.0.0.0/16"
-  azs                          = data.aws_availability_zones.available.names
-  private_subnets              = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  private_subnet_names         = ["${local.project}-private-1", "${local.project}-private-2", "${local.project}-private-3"]
-  public_subnets               = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-  public_subnet_names          = ["${local.project}-public-1", "${local.project}-public-2", "${local.project}-public-3"]
+  name = local.project
+  cidr = "10.0.0.0/16"
+  azs  = data.aws_availability_zones.available.names
+  private_subnets = [
+    "10.0.1.0/24",
+    "10.0.2.0/24",
+    "10.0.3.0/24",
+  ]
+  private_subnet_names = [
+    "${local.project}-private-1",
+    "${local.project}-private-2",
+    "${local.project}-private-3",
+  ]
+  public_subnets = [
+    "10.0.101.0/24",
+    "10.0.102.0/24",
+    "10.0.103.0/24",
+    "10.0.251.0/24",
+    "10.0.252.0/24",
+    "10.0.253.0/24",
+  ]
+  public_subnet_names = [
+    "${local.project}-public-1",
+    "${local.project}-public-2",
+    "${local.project}-public-3",
+    "${local.project}-public-fw-1",
+    "${local.project}-public-fw-2",
+    "${local.project}-public-fw-3",
+  ]
   public_dedicated_network_acl = true
   enable_nat_gateway           = true
   single_nat_gateway           = true

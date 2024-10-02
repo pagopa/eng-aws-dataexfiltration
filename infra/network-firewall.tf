@@ -1,4 +1,13 @@
-data "aws_caller_identity" "current" {}
+data "aws_subnets" "firewall" {
+  filter {
+    name   = "tag:Name"
+    values = [
+      "${local.project}-public-fw-1",
+      "${local.project}-public-fw-2",
+      "${local.project}-public-fw-3",
+    ]
+  }
+}
 
 module "network_firewall_dataexfiltration" {
   source  = "terraform-aws-modules/network-firewall/aws"
@@ -14,9 +23,9 @@ module "network_firewall_dataexfiltration" {
 
   vpc_id = module.vpc_dataexfiltration.vpc_id
   subnet_mapping = {
-    for i in range(0, 3) :
-    "subnet-private-${i}" => {
-      subnet_id       = element(module.vpc_dataexfiltration.private_subnets, i)
+    for i in range(0, length(data.aws_subnets.firewall.ids)) :
+    "subnet-public-fw-${i}" => {
+      subnet_id       = element(data.aws_subnets.firewall.ids, i)
       ip_address_type = "IPV4"
     }
   }
@@ -43,7 +52,7 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
     rules_source = {
       rules_source_list = {
         generated_rules_type = "ALLOWLIST"
-        target_types         = ["HTTP_HOST"]
+        target_types         = ["TLS_SNI"]
         targets              = [".pagopa.it"]
       }
     }
