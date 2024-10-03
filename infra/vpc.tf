@@ -120,3 +120,43 @@ data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
     }
   }
 }
+
+data "aws_networkfirewall_firewall" "vpce-firewall" {
+  name = "${local.project}-firewall"
+}
+
+locals {
+  endpoint_ids = [for sync_state in tolist(data.aws_networkfirewall_firewall.vpce-firewall.firewall_status[0].sync_states) : sync_state.attachment[0].endpoint_id]
+  #vpc_endpoint_id = element([for ss in tolist(aws_networkfirewall_firewall.this.firewall_status[0].sync_states) : ss.attachment[0].endpoint_id if ss.availability_zone == aws_subnet.private[each.key].availability_zone], 0)
+}
+
+variable "cidr_blocks" {
+  type    = list(string)
+  default = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+}
+
+resource "aws_route_table" "route_table_igw" {
+  vpc_id = module.vpc_dataexfiltration.vpc_id
+
+  route {
+    cidr_block = "10.0.0.0/16"
+    gateway_id = "local"
+  }
+
+  dynamic "route" {
+    for_each = zipmap(var.cidr_blocks, local.endpoint_ids)
+    content {
+      cidr_block      = route.key
+      vpc_endpoint_id = route.value
+    }
+  }
+
+  tags = {
+    Name = "${local.project}-igw-fw"
+  }
+}
+
+resource "aws_route_table_association" "route_add_igw" {
+  gateway_id     = module.vpc_dataexfiltration.igw_id
+  route_table_id = aws_route_table.route_table_igw.id
+}

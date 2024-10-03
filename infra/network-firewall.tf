@@ -55,7 +55,7 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
     rules_source = {
       rules_source_list = {
         generated_rules_type = "ALLOWLIST"
-        target_types         = ["HTTP_HOST","TLS_SNI"]
+        target_types         = ["HTTP_HOST", "TLS_SNI"]
         targets              = [".pagopa.it"]
       }
     }
