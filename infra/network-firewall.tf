@@ -51,15 +51,17 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
   type        = "STATEFUL"
   capacity    = 100
 
-  rule_group = {
-    rules_source = {
-      rules_source_list = {
-        generated_rules_type = "ALLOWLIST"
-        target_types         = ["HTTP_HOST", "TLS_SNI"]
-        targets              = [".pagopa.it"]
-      }
-    }
-  }
+  # rule_group = {
+  #   rules_source = {
+  #     rules_source_list = {
+  #       generated_rules_type = "ALLOWLIST"
+  #       target_types         = ["HTTP_HOST", "TLS_SNI"]
+  #       targets              = [".pagopa.it"]
+  #     }
+  #   }
+  # }
+
+  rules = file("${path.module}/suricata.txt")
 
   # Resource Policy
   create_resource_policy     = true
