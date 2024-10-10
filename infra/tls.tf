@@ -1,8 +1,10 @@
+# private key
 resource "tls_private_key" "tls_inspection" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
+# certificate
 resource "tls_self_signed_cert" "tls_inspection" {
   private_key_pem = tls_private_key.tls_inspection.private_key_pem
 
