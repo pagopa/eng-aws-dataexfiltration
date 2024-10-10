@@ -1,23 +1,43 @@
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 module "vpc_dataexfiltration" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "5.1.2"
+  version = "5.13.0"
 
-  name                         = local.project
-  cidr                         = "10.0.0.0/16"
-  azs                          = data.aws_availability_zones.available.names
-  private_subnets              = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  private_subnet_names         = ["${local.project}-private-1", "${local.project}-private-2", "${local.project}-private-3"]
-  public_subnets               = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-  public_subnet_names          = ["${local.project}-public-1", "${local.project}-public-2", "${local.project}-public-3"]
-  public_dedicated_network_acl = true
-  enable_nat_gateway           = true
-  single_nat_gateway           = true
-  enable_dns_hostnames         = true
-  enable_dns_support           = true
+  name = local.project
+  cidr = "10.0.0.0/16"
+  azs  = data.aws_availability_zones.available.names
+  private_subnets = [
+    "10.0.1.0/24",
+    "10.0.2.0/24",
+    "10.0.3.0/24",
+  ]
+  private_subnet_names = [
+    "${local.project}-private-1",
+    "${local.project}-private-2",
+    "${local.project}-private-3",
+  ]
+  public_subnets = [
+    "10.0.101.0/24",
+    "10.0.102.0/24",
+    "10.0.103.0/24",
+    "10.0.251.0/24",
+    "10.0.252.0/24",
+    "10.0.253.0/24",
+  ]
+  public_subnet_names = [
+    "${local.project}-public-1",
+    "${local.project}-public-2",
+    "${local.project}-public-3",
+    "${local.project}-public-fw-1",
+    "${local.project}-public-fw-2",
+    "${local.project}-public-fw-3",
+  ]
+  public_dedicated_network_acl        = true
+  enable_nat_gateway                  = true
+  single_nat_gateway                  = false
+  one_nat_gateway_per_az              = true
+  enable_dns_hostnames                = true
+  enable_dns_support                  = true
+  create_multiple_public_route_tables = true
 }
 
 module "vpc_endpoints_dataexfiltration" {
@@ -99,4 +119,44 @@ data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
       values = [module.vpc_dataexfiltration.vpc_id]
     }
   }
+}
+
+data "aws_networkfirewall_firewall" "vpce-firewall" {
+  name = "${local.project}-firewall"
+}
+
+locals {
+  endpoint_ids = [for sync_state in tolist(data.aws_networkfirewall_firewall.vpce-firewall.firewall_status[0].sync_states) : sync_state.attachment[0].endpoint_id]
+  #vpc_endpoint_id = element([for ss in tolist(aws_networkfirewall_firewall.this.firewall_status[0].sync_states) : ss.attachment[0].endpoint_id if ss.availability_zone == aws_subnet.private[each.key].availability_zone], 0)
+}
+
+variable "cidr_blocks" {
+  type    = list(string)
+  default = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+}
+
+resource "aws_route_table" "route_table_igw" {
+  vpc_id = module.vpc_dataexfiltration.vpc_id
+
+  route {
+    cidr_block = "10.0.0.0/16"
+    gateway_id = "local"
+  }
+
+  dynamic "route" {
+    for_each = zipmap(var.cidr_blocks, local.endpoint_ids)
+    content {
+      cidr_block      = route.key
+      vpc_endpoint_id = route.value
+    }
+  }
+
+  tags = {
+    Name = "${local.project}-igw-fw"
+  }
+}
+
+resource "aws_route_table_association" "route_add_igw" {
+  gateway_id     = module.vpc_dataexfiltration.igw_id
+  route_table_id = aws_route_table.route_table_igw.id
 }
