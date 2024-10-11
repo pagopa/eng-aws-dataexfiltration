@@ -31,14 +31,20 @@ module "network_firewall_dataexfiltration" {
   }
 
   # Policy
-  policy_name        = "${local.project}-firewall-policy"
-  policy_description = "Network firewall policy"
+  create_policy       = false
+  firewall_policy_arn = aws_networkfirewall_firewall_policy.policy-tls-inspect.arn
+}
 
-  policy_stateless_default_actions          = ["aws:forward_to_sfe"]
-  policy_stateless_fragment_default_actions = ["aws:forward_to_sfe"]
+resource "aws_networkfirewall_firewall_policy" "policy-tls-inspect" {
+  name = "${local.project}-tls-inspect"
 
-  policy_stateful_rule_group_reference = {
-    one = { resource_arn = module.network_firewall_rule_group_stateful_dataexfiltration.arn }
+  firewall_policy {
+    stateless_default_actions          = ["aws:forward_to_sfe"]
+    stateless_fragment_default_actions = ["aws:forward_to_sfe"]
+    stateful_rule_group_reference {
+      resource_arn = module.network_firewall_rule_group_stateful_dataexfiltration.arn
+    }
+    tls_inspection_configuration_arn = aws_networkfirewall_tls_inspection_configuration.tls_inspection.arn
   }
 }
 
@@ -74,29 +80,29 @@ resource "aws_cloudwatch_log_group" "network_firewall_log_group" {
 }
 
 # issue https://github.com/hashicorp/terraform-provider-aws/issues/38917
-# resource "aws_networkfirewall_logging_configuration" "network_firewall_logging_configuration" {
-#   firewall_arn = module.network_firewall_dataexfiltration.arn
-#   logging_configuration {
-#     log_destination_config {
-#       log_destination = {
-#         logGroup = aws_cloudwatch_log_group.network_firewall_log_group.name
-#       }
-#       log_destination_type = "CloudWatchLogs"
-#       log_type             = "ALERT"
-#     }
-#     log_destination_config {
-#       log_destination = {
-#         logGroup = aws_cloudwatch_log_group.network_firewall_log_group.name
-#       }
-#       log_destination_type = "CloudWatchLogs"
-#       log_type             = "FLOW"
-#     }
-#     log_destination_config {
-#       log_destination = {
-#         logGroup = aws_cloudwatch_log_group.network_firewall_log_group.name
-#       }
-#       log_destination_type = "CloudWatchLogs"
-#       log_type             = "TLS"
-#     }
-#   }
-# }
+resource "aws_networkfirewall_logging_configuration" "network_firewall_logging_configuration" {
+  firewall_arn = module.network_firewall_dataexfiltration.arn
+  logging_configuration {
+    log_destination_config {
+      log_destination = {
+        logGroup = aws_cloudwatch_log_group.network_firewall_log_group.name
+      }
+      log_destination_type = "CloudWatchLogs"
+      log_type             = "ALERT"
+    }
+    #    log_destination_config {
+    #      log_destination = {
+    #        logGroup = aws_cloudwatch_log_group.network_firewall_log_group.name
+    #      }
+    #      log_destination_type = "CloudWatchLogs"
+    #      log_type             = "FLOW"
+    #    }
+    log_destination_config {
+      log_destination = {
+        logGroup = aws_cloudwatch_log_group.network_firewall_log_group.name
+      }
+      log_destination_type = "CloudWatchLogs"
+      log_type             = "TLS"
+    }
+  }
+}
