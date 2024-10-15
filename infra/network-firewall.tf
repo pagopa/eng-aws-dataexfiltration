@@ -41,8 +41,13 @@ resource "aws_networkfirewall_firewall_policy" "policy-tls-inspect" {
   firewall_policy {
     stateless_default_actions          = ["aws:forward_to_sfe"]
     stateless_fragment_default_actions = ["aws:forward_to_sfe"]
+    stateful_engine_options {
+      rule_order = "STRICT_ORDER"
+    }
+    stateful_default_actions = ["aws:alert_strict"]
     stateful_rule_group_reference {
       resource_arn = module.network_firewall_rule_group_stateful_dataexfiltration.arn
+      priority     = 1
     }
     tls_inspection_configuration_arn = aws_networkfirewall_tls_inspection_configuration.tls_inspection.arn
   }
@@ -57,17 +62,20 @@ module "network_firewall_rule_group_stateful_dataexfiltration" {
   type        = "STATEFUL"
   capacity    = 100
 
-  # rule_group = {
-  #   rules_source = {
-  #     rules_source_list = {
-  #       generated_rules_type = "ALLOWLIST"
-  #       target_types         = ["HTTP_HOST", "TLS_SNI"]
-  #       targets              = [".pagopa.it"]
-  #     }
-  #   }
-  # }
+  rule_group = {
+    stateful_rule_options = {
+      rule_order = "STRICT_ORDER"
+    }
+    rules_source = {
+      rules_source_list = {
+        generated_rules_type = "ALLOWLIST"
+        target_types         = ["TLS_SNI"]
+        targets              = [".pagopa.it"]
+      }
+    }
+  }
 
-  rules = file("${path.module}/suricata.txt")
+  # rules = file("${path.module}/suricata.txt")
 
   # Resource Policy
   create_resource_policy     = true

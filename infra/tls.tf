@@ -59,6 +59,10 @@ resource "aws_networkfirewall_tls_inspection_configuration" "tls_inspection" {
           address_definition = "0.0.0.0/0"
         }
       }
+      # check_certificate_revocation_status {
+      #   revoked_status_action = "DROP"
+      #   unknown_status_action = "DROP"
+      # }
     }
   }
 }
