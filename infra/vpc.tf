@@ -24,9 +24,9 @@ module "vpc_dataexfiltration" {
     "10.0.253.0/24",
   ]
   public_subnet_names = [
-    "${local.project}-public-1",
-    "${local.project}-public-2",
-    "${local.project}-public-3",
+    "${local.project}-public-natgw-1",
+    "${local.project}-public-natgw-2",
+    "${local.project}-public-natgw-3",
     "${local.project}-public-fw-1",
     "${local.project}-public-fw-2",
     "${local.project}-public-fw-3",
@@ -38,6 +38,18 @@ module "vpc_dataexfiltration" {
   enable_dns_hostnames                = true
   enable_dns_support                  = true
   create_multiple_public_route_tables = true
+  create_igw                          = false
+}
+
+data "aws_subnets" "nat_gateway" {
+  filter {
+    name = "tag:Name"
+    values = [
+      "${local.project}-public-natgw-1",
+      "${local.project}-public-natgw-2",
+      "${local.project}-public-natgw-3",
+    ]
+  }
 }
 
 module "vpc_endpoints_dataexfiltration" {
@@ -121,18 +133,16 @@ data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
   }
 }
 
-data "aws_networkfirewall_firewall" "vpce-firewall" {
-  name = "${local.project}-firewall"
-}
-
-locals {
-  endpoint_ids = [for sync_state in tolist(data.aws_networkfirewall_firewall.vpce-firewall.firewall_status[0].sync_states) : sync_state.attachment[0].endpoint_id]
-  #vpc_endpoint_id = element([for ss in tolist(aws_networkfirewall_firewall.this.firewall_status[0].sync_states) : ss.attachment[0].endpoint_id if ss.availability_zone == aws_subnet.private[each.key].availability_zone], 0)
-}
-
 variable "cidr_blocks" {
   type    = list(string)
   default = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+}
+
+resource "aws_internet_gateway" "this" {
+  vpc_id = module.vpc_dataexfiltration.vpc_id
+  tags = {
+    Name = "${local.project}-igw"
+  }
 }
 
 resource "aws_route_table" "route_table_igw" {
@@ -144,7 +154,7 @@ resource "aws_route_table" "route_table_igw" {
   }
 
   dynamic "route" {
-    for_each = zipmap(var.cidr_blocks, local.endpoint_ids)
+    for_each = zipmap(var.cidr_blocks, local.firewall_endpoint_ids)
     content {
       cidr_block      = route.key
       vpc_endpoint_id = route.value
@@ -157,6 +167,20 @@ resource "aws_route_table" "route_table_igw" {
 }
 
 resource "aws_route_table_association" "route_add_igw" {
-  gateway_id     = module.vpc_dataexfiltration.igw_id
+  gateway_id     = aws_internet_gateway.this.id
   route_table_id = aws_route_table.route_table_igw.id
+}
+
+resource "aws_route" "nat_gateway_to_firewall" {
+  for_each               = toset(["0", "1", "2"])
+  route_table_id         = module.vpc_dataexfiltration.public_route_table_ids[each.key]
+  destination_cidr_block = "0.0.0.0/0"
+  vpc_endpoint_id        = local.firewall_endpoint_ids[each.key]
+}
+
+resource "aws_route" "firewall_tointernet_gateway" {
+  for_each               = toset(["3", "4", "5"])
+  route_table_id         = module.vpc_dataexfiltration.public_route_table_ids[each.key]
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.this.id
 }

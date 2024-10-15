@@ -37,6 +37,14 @@ module "network_firewall_dataexfiltration" {
   # firewall_policy_arn = aws_networkfirewall_firewall_policy.switch.arn
 }
 
+data "aws_networkfirewall_firewall" "vpce-firewall" {
+  name = "${local.project}-firewall"
+}
+
+locals {
+  firewall_endpoint_ids = [for sync_state in tolist(data.aws_networkfirewall_firewall.vpce-firewall.firewall_status[0].sync_states) : sync_state.attachment[0].endpoint_id]
+}
+
 resource "aws_cloudwatch_log_group" "network_firewall_log_group" {
   name = "/aws/${local.project}-network-firewall"
 }
