@@ -1,0 +1,3 @@
+pass tls any any -> any any (msg:"Site Allow"; tls.sni; content:".pagopa.it"; endswith; sid:1;)
+pass tls any any -> any any (msg:"Site Allow"; tls.sni; content:"pagopa.it"; startswith; endswith; sid:2;)
+drop tcp any any -> any any (msg:"Drop established"; flow: from_client,established; sid:10000;)
