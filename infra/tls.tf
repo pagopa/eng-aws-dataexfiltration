@@ -35,13 +35,17 @@ resource "aws_acm_certificate" "tls_inspection" {
 }
 
 resource "aws_networkfirewall_tls_inspection_configuration" "tls_inspection" {
-  name        = "${local.project}-tlsinspection"
-  description = "tlsinspection"
+  name        = "${local.project}-tls-inspection"
+  description = "tls-inspection"
 
   tls_inspection_configuration {
     server_certificate_configuration {
       certificate_authority_arn = aws_acm_certificate.tls_inspection.arn
-
+      # TODO: not works manually update this on AWS console
+      check_certificate_revocation_status {
+        revoked_status_action = "DROP"
+        unknown_status_action = "DROP"
+      }
       scope {
         protocols = [6]
         destination_ports {
@@ -59,10 +63,6 @@ resource "aws_networkfirewall_tls_inspection_configuration" "tls_inspection" {
           address_definition = "0.0.0.0/0"
         }
       }
-      # check_certificate_revocation_status {
-      #   revoked_status_action = "DROP"
-      #   unknown_status_action = "DROP"
-      # }
     }
   }
 }
