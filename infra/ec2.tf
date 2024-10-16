@@ -1,3 +1,10 @@
+data "aws_ami" "aws" {
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.6.20241010.0-kernel-6.1-x86_64"]
+  }
+}
+
 module "ec2_instance_dataexfiltration_one" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "5.7.0"
@@ -5,7 +12,7 @@ module "ec2_instance_dataexfiltration_one" {
   name = "${local.project}-ec2-one"
 
   instance_type = "t3a.nano"
-  ami           = "ami-06d4fa1e7c1b6d9b7"
+  ami           = data.aws_ami.aws.id
 
   subnet_id              = element(module.vpc_dataexfiltration.private_subnets, 0)
   vpc_security_group_ids = [module.security_group_dataexfiltration_one.security_group_id]
@@ -32,8 +39,9 @@ module "security_group_dataexfiltration_one" {
       to_port     = -1
       protocol    = "icmp"
       description = "User-service ports"
-      cidr_blocks = "10.0.0.0/16"
-  }]
+      cidr_blocks = var.vpc_cidr_block
+    }
+  ]
 }
 
 module "ec2_instance_dataexfiltration_sni_listener" {
@@ -43,7 +51,7 @@ module "ec2_instance_dataexfiltration_sni_listener" {
   name = "${local.project}-ec2-sni-listener"
 
   instance_type = "t3a.nano"
-  ami           = "ami-06d4fa1e7c1b6d9b7"
+  ami           = data.aws_ami.aws.id
 
   vpc_security_group_ids = [module.security_group_dataexfiltration_sni_listener.security_group_id]
 
