@@ -34,3 +34,7 @@ locals {
 data "aws_availability_zones" "available" {
   state = "available"
 }
+
+output "project" {
+  value = local.project
+}

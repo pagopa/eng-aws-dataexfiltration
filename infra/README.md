@@ -13,8 +13,10 @@
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_ec2_instance_dataexfiltration_one"></a> [ec2\_instance\_dataexfiltration\_one](#module\_ec2\_instance\_dataexfiltration\_one) | terraform-aws-modules/ec2-instance/aws | 5.7.0 |
+| <a name="module_ec2_instance_dataexfiltration_sni_listener"></a> [ec2\_instance\_dataexfiltration\_sni\_listener](#module\_ec2\_instance\_dataexfiltration\_sni\_listener) | terraform-aws-modules/ec2-instance/aws | 5.7.0 |
 | <a name="module_network_firewall_dataexfiltration"></a> [network\_firewall\_dataexfiltration](#module\_network\_firewall\_dataexfiltration) | terraform-aws-modules/network-firewall/aws | 1.0.1 |
 | <a name="module_security_group_dataexfiltration_one"></a> [security\_group\_dataexfiltration\_one](#module\_security\_group\_dataexfiltration\_one) | terraform-aws-modules/security-group/aws | ~> 5.0 |
+| <a name="module_security_group_dataexfiltration_sni_listener"></a> [security\_group\_dataexfiltration\_sni\_listener](#module\_security\_group\_dataexfiltration\_sni\_listener) | terraform-aws-modules/security-group/aws | n/a |
 | <a name="module_vpc_dataexfiltration"></a> [vpc\_dataexfiltration](#module\_vpc\_dataexfiltration) | terraform-aws-modules/vpc/aws | 5.13.0 |
 | <a name="module_vpc_endpoints_aws"></a> [vpc\_endpoints\_aws](#module\_vpc\_endpoints\_aws) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 5.13.0 |
 | <a name="module_vpc_endpoints_dataexfiltration"></a> [vpc\_endpoints\_dataexfiltration](#module\_vpc\_endpoints\_dataexfiltration) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 5.13.0 |
@@ -60,5 +62,8 @@
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+|------|-------------|
+| <a name="output_ec2_sni_listener_public_ip"></a> [ec2\_sni\_listener\_public\_ip](#output\_ec2\_sni\_listener\_public\_ip) | n/a |
+| <a name="output_project"></a> [project](#output\_project) | n/a |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
