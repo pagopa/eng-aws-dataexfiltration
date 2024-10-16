@@ -1,4 +1,5 @@
 data "aws_subnets" "firewall" {
+  depends_on = [module.vpc_dataexfiltration]
   filter {
     name = "tag:Name"
     values = [
@@ -37,12 +38,8 @@ module "network_firewall_dataexfiltration" {
   # firewall_policy_arn = aws_networkfirewall_firewall_policy.switch.arn
 }
 
-data "aws_networkfirewall_firewall" "vpce-firewall" {
-  name = "${local.project}-firewall"
-}
-
 locals {
-  firewall_endpoint_ids = [for sync_state in tolist(data.aws_networkfirewall_firewall.vpce-firewall.firewall_status[0].sync_states) : sync_state.attachment[0].endpoint_id]
+  firewall_endpoint_ids = [for endpoint in module.network_firewall_dataexfiltration.status[0].sync_states[*].attachment[*].endpoint_id : endpoint[0]]
 }
 
 resource "aws_cloudwatch_log_group" "network_firewall_log_group" {
@@ -99,7 +96,7 @@ resource "aws_networkfirewall_firewall_policy" "dataexfiltration" {
     stateful_engine_options {
       rule_order = "STRICT_ORDER"
     }
-    stateful_default_actions = ["aws:alert_strict"]
+    # stateful_default_actions = ["aws:drop_strict", "aws:alert_strict"]
     stateful_rule_group_reference {
       resource_arn = aws_networkfirewall_rule_group.stateful_dataexfiltration.arn
       priority     = 1

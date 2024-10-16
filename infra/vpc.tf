@@ -3,7 +3,7 @@ module "vpc_dataexfiltration" {
   version = "5.13.0"
 
   name = local.project
-  cidr = "10.0.0.0/16"
+  cidr = var.vpc_cidr_block
   azs  = data.aws_availability_zones.available.names
   private_subnets = [
     "10.0.1.0/24",
@@ -42,6 +42,7 @@ module "vpc_dataexfiltration" {
 }
 
 data "aws_subnets" "nat_gateway" {
+  depends_on = [module.vpc_dataexfiltration]
   filter {
     name = "tag:Name"
     values = [
@@ -133,11 +134,6 @@ data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
   }
 }
 
-variable "cidr_blocks" {
-  type    = list(string)
-  default = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-}
-
 resource "aws_internet_gateway" "this" {
   vpc_id = module.vpc_dataexfiltration.vpc_id
   tags = {
@@ -146,18 +142,19 @@ resource "aws_internet_gateway" "this" {
 }
 
 resource "aws_route_table" "route_table_igw" {
-  vpc_id = module.vpc_dataexfiltration.vpc_id
+  depends_on = [module.network_firewall_dataexfiltration]
+  vpc_id     = module.vpc_dataexfiltration.vpc_id
 
   route {
-    cidr_block = "10.0.0.0/16"
+    cidr_block = var.vpc_cidr_block
     gateway_id = "local"
   }
 
   dynamic "route" {
-    for_each = zipmap(var.cidr_blocks, local.firewall_endpoint_ids)
+    for_each = ["0", "1", "2"]
     content {
-      cidr_block      = route.key
-      vpc_endpoint_id = route.value
+      cidr_block      = module.vpc_dataexfiltration.public_subnets_cidr_blocks[route.key]
+      vpc_endpoint_id = local.firewall_endpoint_ids[route.key]
     }
   }
 
@@ -172,6 +169,7 @@ resource "aws_route_table_association" "route_add_igw" {
 }
 
 resource "aws_route" "nat_gateway_to_firewall" {
+  depends_on             = [module.network_firewall_dataexfiltration]
   for_each               = toset(["0", "1", "2"])
   route_table_id         = module.vpc_dataexfiltration.public_route_table_ids[each.key]
   destination_cidr_block = "0.0.0.0/0"
