@@ -66,3 +66,34 @@ resource "aws_networkfirewall_tls_inspection_configuration" "tls_inspection" {
     }
   }
 }
+
+module "s3_tls_inspection" {
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "4.1.1"
+
+  bucket = "${local.project}-tls-inspection"
+  acl    = "private"
+
+  control_object_ownership = true
+  object_ownership         = "ObjectWriter"
+}
+
+data "archive_file" "tls_inspection_ca_certificate" {
+  type                    = "zip"
+  source_content          = tls_self_signed_cert.tls_inspection.cert_pem
+  source_content_filename = "cert.pem"
+  output_path             = "./tls-certificate-ca-certificate.zip"
+}
+
+resource "aws_s3_object" "tls_inspection_ca_certificate" {
+  bucket      = module.s3_tls_inspection.s3_bucket_id
+  key         = "tls-certificate-ca-certificate.zip"
+  source      = data.archive_file.tls_inspection_ca_certificate.output_path
+  source_hash = filemd5(data.archive_file.tls_inspection_ca_certificate.output_path)
+}
+
+resource "aws_lambda_layer_version" "tls_inspection" {
+  layer_name = "${local.project}-lambda-layer-tls-inspection"
+  s3_bucket  = aws_s3_object.tls_inspection_ca_certificate.bucket
+  s3_key     = aws_s3_object.tls_inspection_ca_certificate.key
+}
