@@ -1,5 +1,5 @@
 variable "aws_region" {
-  type = string
+  type    = string
   default = "eu-south-1" # Milan
   # default = "eu-west-3" # Paris
 }
