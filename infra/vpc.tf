@@ -195,26 +195,32 @@ resource "aws_route_table_association" "internet_gateway" {
   route_table_id = aws_route_table.internet_gateway.id
 }
 
-# resource "aws_route_table" "load_balancer" {
-#   count  = length(var.vpc_load_balancer_subnets.cidr)
-#   vpc_id = aws_vpc.main.id
+resource "aws_route_table" "load_balancer" {
+  count  = length(var.vpc_load_balancer_subnets.cidr)
+  vpc_id = aws_vpc.main.id
 
-#   dynamic "route" {
-#     for_each = var.vpc_load_balancer_subnets.type == "public" ? ["dummy"] : []
-#     content {
-#       cidr_block = "0.0.0.0/0"
-#       gateway_id = aws_internet_gateway.this.id
-#     }
-#   }
-#   tags = {
-#     Name = "${local.project}-${var.vpc_load_balancer_subnets.name}-rt-${count.index}"
-#     Zone = data.aws_availability_zones.available.names[count.index]
-#   }
-# }
+  route {
+    cidr_block = var.vpc_cidr_block
+    gateway_id = "local"
+  }
 
-# resource "aws_route_table_association" "load_balancer" {
-#   count = length(var.vpc_load_balancer_subnets.cidr)
+  dynamic "route" {
+    for_each = var.vpc_load_balancer_subnets.type == "public" ? ["dummy"] : []
+    content {
+      cidr_block = "0.0.0.0/0"
+      gateway_id = aws_internet_gateway.main.id
+    }
+  }
 
-#   subnet_id      = element(aws_subnet.load_balancer[*].id, count.index)
-#   route_table_id = element(aws_route_table.load_balancer[*].id, count.index)
-# }
+  tags = {
+    Name = "${local.project}-${var.vpc_load_balancer_subnets.name}-rt-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_route_table_association" "load_balancer" {
+  count = length(var.vpc_load_balancer_subnets.cidr)
+
+  subnet_id      = element(aws_subnet.load_balancer[*].id, count.index)
+  route_table_id = element(aws_route_table.load_balancer[*].id, count.index)
+}
