@@ -15,10 +15,22 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-resource "aws_nat_gateway" "main" {
+resource "aws_eip" "main" {
   count             = length(var.vpc_nat_gateway_subnets.cidr)
-  connectivity_type = "private"
+  tags = {
+    Name = "${local.project}-natgw-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_nat_gateway" "main" {
+  depends_on = [aws_internet_gateway.main]
+
+  count             = length(var.vpc_nat_gateway_subnets.cidr)
+  connectivity_type = "public"
   subnet_id         = element(aws_subnet.nat_gateway[*].id, count.index)
+  allocation_id     = element(aws_eip.main[*].id, count.index)
+
   tags = {
     Name = "${local.project}-natgw-${count.index}"
     Zone = data.aws_availability_zones.available.names[count.index]
@@ -125,8 +137,8 @@ resource "aws_route_table" "firewall" {
 resource "aws_route_table_association" "firewall" {
   count = length(var.vpc_firewall_subnets.cidr)
 
-  subnet_id      = element(aws_subnet.nat_gateway[*].id, count.index)
-  route_table_id = element(aws_route_table.nat_gateway[*].id, count.index)
+  subnet_id      = element(aws_subnet.firewall[*].id, count.index)
+  route_table_id = element(aws_route_table.firewall[*].id, count.index)
 }
 
 resource "aws_route_table" "compute" {
@@ -144,7 +156,7 @@ resource "aws_route_table" "compute" {
   }
 
   tags = {
-    Name = "${local.project}-${var.vpc_firewall_subnets.name}-rt-${count.index}"
+    Name = "${local.project}-${var.vpc_compute_subnets.name}-rt-${count.index}"
     Zone = data.aws_availability_zones.available.names[count.index]
   }
 }
