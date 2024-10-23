@@ -14,7 +14,7 @@ module "ec2_instance_dataexfiltration_one" {
   instance_type = "t3a.nano"
   ami           = data.aws_ami.aws.id
 
-  subnet_id              = element(module.vpc_dataexfiltration.private_subnets, 0)
+  subnet_id              = element(aws_subnet.nat_gateway[*].id, 0)
   vpc_security_group_ids = [module.security_group_dataexfiltration_one.security_group_id]
 
   create_iam_instance_profile = true
@@ -31,7 +31,7 @@ module "security_group_dataexfiltration_one" {
 
   name         = "${local.project}-securitygroup-ec2-one"
   description  = "Security Group for EC2 Instance Egress"
-  vpc_id       = module.vpc_dataexfiltration.vpc_id
+  vpc_id       = aws_vpc.main.id
   egress_rules = ["https-443-tcp"]
   egress_with_cidr_blocks = [
     {

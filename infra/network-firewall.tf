@@ -1,14 +1,14 @@
-data "aws_subnets" "firewall" {
-  depends_on = [module.vpc_dataexfiltration]
-  filter {
-    name = "tag:Name"
-    values = [
-      "${local.project}-public-fw-1",
-      "${local.project}-public-fw-2",
-      "${local.project}-public-fw-3",
-    ]
-  }
-}
+# data "aws_subnets" "firewall" {
+#   depends_on = [module.vpc_dataexfiltration]
+#   filter {
+#     name = "tag:Name"
+#     values = [
+#       "${local.project}-public-fw-1",
+#       "${local.project}-public-fw-2",
+#       "${local.project}-public-fw-3",
+#     ]
+#   }
+# }
 
 module "network_firewall_dataexfiltration" {
   source  = "terraform-aws-modules/network-firewall/aws"
@@ -22,11 +22,11 @@ module "network_firewall_dataexfiltration" {
   firewall_policy_change_protection = false
   subnet_change_protection          = false
 
-  vpc_id = module.vpc_dataexfiltration.vpc_id
+  vpc_id = aws_vpc.main.id
   subnet_mapping = {
-    for i in range(0, length(data.aws_subnets.firewall.ids)) :
-    "subnet-public-fw-${i}" => {
-      subnet_id       = element(data.aws_subnets.firewall.ids, i)
+    for i in range(0, length(aws_subnet.firewall)) :
+    "subnet-fw-${i}" => {
+      subnet_id       = element(aws_subnet.firewall[*].id, i)
       ip_address_type = "IPV4"
     }
   }

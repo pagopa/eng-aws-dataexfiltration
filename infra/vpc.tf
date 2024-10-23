@@ -1,149 +1,164 @@
-module "vpc_dataexfiltration" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.13.0"
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr_block
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 
-  name = local.project
-  cidr = var.vpc_cidr_block
-  azs  = data.aws_availability_zones.available.names
-  private_subnets = [
-    "10.0.1.0/24",
-    "10.0.2.0/24",
-    "10.0.3.0/24",
-  ]
-  private_subnet_names = [
-    "${local.project}-private-1",
-    "${local.project}-private-2",
-    "${local.project}-private-3",
-  ]
-  public_subnets = [
-    "10.0.101.0/24",
-    "10.0.102.0/24",
-    "10.0.103.0/24",
-    "10.0.251.0/24",
-    "10.0.252.0/24",
-    "10.0.253.0/24",
-  ]
-  public_subnet_names = [
-    "${local.project}-public-natgw-1",
-    "${local.project}-public-natgw-2",
-    "${local.project}-public-natgw-3",
-    "${local.project}-public-fw-1",
-    "${local.project}-public-fw-2",
-    "${local.project}-public-fw-3",
-  ]
-  public_dedicated_network_acl        = true
-  enable_nat_gateway                  = true
-  single_nat_gateway                  = false
-  one_nat_gateway_per_az              = true
-  enable_dns_hostnames                = true
-  enable_dns_support                  = true
-  create_multiple_public_route_tables = true
-  create_igw                          = false
-}
-
-data "aws_subnets" "nat_gateway" {
-  depends_on = [module.vpc_dataexfiltration]
-  filter {
-    name = "tag:Name"
-    values = [
-      "${local.project}-public-natgw-1",
-      "${local.project}-public-natgw-2",
-      "${local.project}-public-natgw-3",
-    ]
+  tags = {
+    Name = "${local.project}-vpc"
   }
 }
 
-module "vpc_endpoints_dataexfiltration" {
-  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "5.13.0"
-
-  vpc_id = module.vpc_dataexfiltration.vpc_id
-
-  endpoints = { for service in toset(["ssm", "ssmmessages", "ec2messages"]) :
-    replace(service, ".", "_") =>
-    {
-      service             = service
-      subnet_ids          = module.vpc_dataexfiltration.private_subnets
-      private_dns_enabled = true
-    }
-  }
-
-  create_security_group      = true
-  security_group_name_prefix = "${local.project}-vpc-endpoints"
-  security_group_description = "VPC endpoint security group"
-  security_group_rules = {
-    ingress_https = {
-      description = "HTTPS from subnets"
-      cidr_blocks = module.vpc_dataexfiltration.private_subnets_cidr_blocks
-    }
-  }
-}
-
-module "vpc_endpoints_aws" {
-  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "5.13.0"
-
-  vpc_id = module.vpc_dataexfiltration.vpc_id
-
-  create_security_group      = true
-  security_group_name_prefix = "${local.project}-vpc-endpoints-aws"
-  security_group_description = "VPC endpoint security group"
-  security_group_rules = {
-    ingress_https = {
-      description = "HTTPS from VPC"
-      cidr_blocks = [module.vpc_dataexfiltration.vpc_cidr_block]
-    }
-  }
-
-  endpoints = {
-    s3 = {
-      service             = "s3"
-      tags                = { Name = "s3-vpc-endpoint" }
-      private_dns_enabled = true
-      dns_options = {
-        private_dns_only_for_inbound_resolver_endpoint = false
-      }
-    },
-    dynamodb = {
-      service         = "dynamodb"
-      service_type    = "Gateway"
-      route_table_ids = flatten([module.vpc_dataexfiltration.private_route_table_ids, module.vpc_dataexfiltration.public_route_table_ids])
-      policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
-      tags            = { Name = "dynamodb-vpc-endpoint" }
-    }
-  }
-}
-
-data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
-  statement {
-    effect    = "Deny"
-    actions   = ["dynamodb:*"]
-    resources = ["*"]
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-
-    condition {
-      test     = "StringNotEquals"
-      variable = "aws:sourceVpc"
-
-      values = [module.vpc_dataexfiltration.vpc_id]
-    }
-  }
-}
-
-resource "aws_internet_gateway" "this" {
-  vpc_id = module.vpc_dataexfiltration.vpc_id
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
   tags = {
     Name = "${local.project}-igw"
   }
 }
 
-resource "aws_route_table" "route_table_igw" {
+resource "aws_nat_gateway" "main" {
+  count             = length(var.vpc_nat_gateway_subnets.cidr)
+  connectivity_type = "private"
+  subnet_id         = element(aws_subnet.nat_gateway[*].id, count.index)
+  tags = {
+    Name = "${local.project}-natgw-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_subnet" "load_balancer" {
+  count                   = length(var.vpc_load_balancer_subnets.cidr)
+  availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
+  cidr_block              = var.vpc_load_balancer_subnets.cidr[count.index]
+  map_public_ip_on_launch = var.vpc_load_balancer_subnets.type == "public" ? true : false
+  vpc_id                  = aws_vpc.main.id
+  tags = {
+    Name = "${local.project}-${var.vpc_load_balancer_subnets.name}-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_subnet" "firewall" {
+  count                   = length(var.vpc_firewall_subnets.cidr)
+  availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
+  cidr_block              = var.vpc_firewall_subnets.cidr[count.index]
+  map_public_ip_on_launch = var.vpc_firewall_subnets.type == "public" ? true : false
+  vpc_id                  = aws_vpc.main.id
+  tags = {
+    Name = "${local.project}-${var.vpc_firewall_subnets.name}-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_subnet" "nat_gateway" {
+  count                   = length(var.vpc_nat_gateway_subnets.cidr)
+  availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
+  cidr_block              = var.vpc_nat_gateway_subnets.cidr[count.index]
+  map_public_ip_on_launch = var.vpc_nat_gateway_subnets.type == "public" ? true : false
+  vpc_id                  = aws_vpc.main.id
+  tags = {
+    Name = "${local.project}-${var.vpc_nat_gateway_subnets.name}-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_subnet" "compute" {
+  count                   = length(var.vpc_compute_subnets.cidr)
+  availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
+  cidr_block              = var.vpc_compute_subnets.cidr[count.index]
+  map_public_ip_on_launch = var.vpc_compute_subnets.type == "public" ? true : false
+  vpc_id                  = aws_vpc.main.id
+  tags = {
+    Name = "${local.project}-${var.vpc_compute_subnets.name}-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+## Routing
+
+resource "aws_route_table" "nat_gateway" {
+  count  = length(var.vpc_nat_gateway_subnets.cidr)
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = var.vpc_cidr_block
+    gateway_id = "local"
+  }
+
+  route {
+    cidr_block      = "0.0.0.0/0"
+    vpc_endpoint_id = local.firewall_endpoint_ids[count.index]
+  }
+
+  tags = {
+    Name = "${local.project}-${var.vpc_nat_gateway_subnets.name}-rt-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_route_table_association" "nat_gateway" {
+  count = length(var.vpc_nat_gateway_subnets.cidr)
+
+  subnet_id      = element(aws_subnet.nat_gateway[*].id, count.index)
+  route_table_id = element(aws_route_table.nat_gateway[*].id, count.index)
+}
+
+resource "aws_route_table" "firewall" {
+  count  = length(var.vpc_firewall_subnets.cidr)
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = var.vpc_cidr_block
+    gateway_id = "local"
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "${local.project}-${var.vpc_firewall_subnets.name}-rt-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_route_table_association" "firewall" {
+  count = length(var.vpc_firewall_subnets.cidr)
+
+  subnet_id      = element(aws_subnet.nat_gateway[*].id, count.index)
+  route_table_id = element(aws_route_table.nat_gateway[*].id, count.index)
+}
+
+resource "aws_route_table" "compute" {
+  count  = length(var.vpc_compute_subnets.cidr)
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = var.vpc_cidr_block
+    gateway_id = "local"
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = element(aws_nat_gateway.main[*].id, count.index)
+  }
+
+  tags = {
+    Name = "${local.project}-${var.vpc_firewall_subnets.name}-rt-${count.index}"
+    Zone = data.aws_availability_zones.available.names[count.index]
+  }
+}
+
+resource "aws_route_table_association" "compute" {
+  count = length(var.vpc_compute_subnets.cidr)
+
+  subnet_id      = element(aws_subnet.compute[*].id, count.index)
+  route_table_id = element(aws_route_table.compute[*].id, count.index)
+}
+
+resource "aws_route_table" "internet_gateway" {
   depends_on = [module.network_firewall_dataexfiltration]
-  vpc_id     = module.vpc_dataexfiltration.vpc_id
+  vpc_id     = aws_vpc.main.id
 
   route {
     cidr_block = var.vpc_cidr_block
@@ -151,34 +166,43 @@ resource "aws_route_table" "route_table_igw" {
   }
 
   dynamic "route" {
-    for_each = ["0", "1", "2"]
+    for_each = range(length(var.vpc_nat_gateway_subnets.cidr))
     content {
-      cidr_block      = module.vpc_dataexfiltration.public_subnets_cidr_blocks[route.key]
+      cidr_block      = var.vpc_nat_gateway_subnets.cidr[route.key]
       vpc_endpoint_id = local.firewall_endpoint_ids[route.key]
     }
   }
 
   tags = {
-    Name = "${local.project}-igw-fw"
+    Name = "${local.project}-igw-rt"
   }
 }
 
-resource "aws_route_table_association" "route_add_igw" {
-  gateway_id     = aws_internet_gateway.this.id
-  route_table_id = aws_route_table.route_table_igw.id
+resource "aws_route_table_association" "internet_gateway" {
+  gateway_id     = aws_internet_gateway.main.id
+  route_table_id = aws_route_table.internet_gateway.id
 }
 
-resource "aws_route" "nat_gateway_to_firewall" {
-  depends_on             = [module.network_firewall_dataexfiltration]
-  for_each               = toset(["0", "1", "2"])
-  route_table_id         = module.vpc_dataexfiltration.public_route_table_ids[each.key]
-  destination_cidr_block = "0.0.0.0/0"
-  vpc_endpoint_id        = local.firewall_endpoint_ids[each.key]
-}
+# resource "aws_route_table" "load_balancer" {
+#   count  = length(var.vpc_load_balancer_subnets.cidr)
+#   vpc_id = aws_vpc.main.id
 
-resource "aws_route" "firewall_tointernet_gateway" {
-  for_each               = toset(["3", "4", "5"])
-  route_table_id         = module.vpc_dataexfiltration.public_route_table_ids[each.key]
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.this.id
-}
+#   dynamic "route" {
+#     for_each = var.vpc_load_balancer_subnets.type == "public" ? ["dummy"] : []
+#     content {
+#       cidr_block = "0.0.0.0/0"
+#       gateway_id = aws_internet_gateway.this.id
+#     }
+#   }
+#   tags = {
+#     Name = "${local.project}-${var.vpc_load_balancer_subnets.name}-rt-${count.index}"
+#     Zone = data.aws_availability_zones.available.names[count.index]
+#   }
+# }
+
+# resource "aws_route_table_association" "load_balancer" {
+#   count = length(var.vpc_load_balancer_subnets.cidr)
+
+#   subnet_id      = element(aws_subnet.load_balancer[*].id, count.index)
+#   route_table_id = element(aws_route_table.load_balancer[*].id, count.index)
+# }

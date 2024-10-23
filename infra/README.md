@@ -32,6 +32,7 @@
 | [aws_iam_policy.lambda_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.lambda_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.lambda_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_internet_gateway.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway) | resource |
 | [aws_internet_gateway.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway) | resource |
 | [aws_lambda_function.lambda_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_lambda_function_url.lambda_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function_url) | resource |
@@ -41,7 +42,7 @@
 | [aws_networkfirewall_logging_configuration.configuration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_logging_configuration) | resource |
 | [aws_networkfirewall_rule_group.stateful_dataexfiltration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_rule_group) | resource |
 | [aws_networkfirewall_tls_inspection_configuration.tls_inspection](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_tls_inspection_configuration) | resource |
-| [aws_route.firewall_tointernet_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
+| [aws_route.firewall_to_internet_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route.nat_gateway_to_firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route53_resolver_firewall_domain_list.allow_domain_list_dataexfiltration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_resolver_firewall_domain_list) | resource |
 | [aws_route53_resolver_firewall_domain_list.block_domain_list_dataexfiltration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_resolver_firewall_domain_list) | resource |
@@ -49,9 +50,20 @@
 | [aws_route53_resolver_firewall_rule.dns_fw_block_dataexfiltration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_resolver_firewall_rule) | resource |
 | [aws_route53_resolver_firewall_rule_group.rule_group_dataexfiltration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_resolver_firewall_rule_group) | resource |
 | [aws_route53_resolver_firewall_rule_group_association.vpc_rule_group_dataexfiltration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_resolver_firewall_rule_group_association) | resource |
+| [aws_route_table.firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table) | resource |
+| [aws_route_table.internet_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table) | resource |
+| [aws_route_table.nat_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table) | resource |
 | [aws_route_table.route_table_igw](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table) | resource |
+| [aws_route_table_association.firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
+| [aws_route_table_association.internet_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
+| [aws_route_table_association.nat_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
 | [aws_route_table_association.route_add_igw](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
 | [aws_s3_object.tls_inspection_ca_certificate](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
+| [aws_subnet.compute](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet) | resource |
+| [aws_subnet.firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet) | resource |
+| [aws_subnet.load_balancer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet) | resource |
+| [aws_subnet.nat_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet) | resource |
+| [aws_vpc.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc) | resource |
 | [random_id.unique](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) | resource |
 | [tls_private_key.tls_inspection](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
 | [tls_self_signed_cert.tls_inspection](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/self_signed_cert) | resource |
@@ -67,10 +79,14 @@
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | n/a | `string` | `"eu-south-1"` | no |
+| <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | n/a | `string` | `"eu-west-3"` | no |
 | <a name="input_prefix"></a> [prefix](#input\_prefix) | Resorce prefix | `string` | `"dex"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Data Exfiltarion Solution | `map(string)` | <pre>{<br/>  "CreatedBy": "Terraform"<br/>}</pre> | no |
 | <a name="input_vpc_cidr_block"></a> [vpc\_cidr\_block](#input\_vpc\_cidr\_block) | vpc cidr block | `string` | `"10.0.0.0/16"` | no |
+| <a name="input_vpc_compute_subnets"></a> [vpc\_compute\_subnets](#input\_vpc\_compute\_subnets) | Compute subnets | <pre>object({<br/>    name = string<br/>    cidr = list(string)<br/>    type = string<br/>  })</pre> | <pre>{<br/>  "cidr": [<br/>    "10.0.1.0/24",<br/>    "10.0.2.0/24",<br/>    "10.0.2.0/24"<br/>  ],<br/>  "name": "compute",<br/>  "type": "private"<br/>}</pre> | no |
+| <a name="input_vpc_firewall_subnets"></a> [vpc\_firewall\_subnets](#input\_vpc\_firewall\_subnets) | Firewall subnets | <pre>object({<br/>    name = string<br/>    cidr = list(string)<br/>    type = string<br/>  })</pre> | <pre>{<br/>  "cidr": [<br/>    "10.0.104.0/24",<br/>    "10.0.105.0/24",<br/>    "10.0.106.0/24"<br/>  ],<br/>  "name": "fw",<br/>  "type": "public"<br/>}</pre> | no |
+| <a name="input_vpc_load_balancer_subnets"></a> [vpc\_load\_balancer\_subnets](#input\_vpc\_load\_balancer\_subnets) | Application load balancer subnets | <pre>object({<br/>    name = string<br/>    cidr = list(string)<br/>    type = string<br/>  })</pre> | <pre>{<br/>  "cidr": [<br/>    "10.0.107.0/24",<br/>    "10.0.108.0/24",<br/>    "10.0.109.0/24"<br/>  ],<br/>  "name": "lb",<br/>  "type": "public"<br/>}</pre> | no |
+| <a name="input_vpc_nat_gateway_subnets"></a> [vpc\_nat\_gateway\_subnets](#input\_vpc\_nat\_gateway\_subnets) | NAT Gateway subnets | <pre>object({<br/>    name = string<br/>    cidr = list(string)<br/>    type = string<br/>  })</pre> | <pre>{<br/>  "cidr": [<br/>    "10.0.101.0/24",<br/>    "10.0.102.0/24",<br/>    "10.0.103.0/24"<br/>  ],<br/>  "name": "natgw",<br/>  "type": "public"<br/>}</pre> | no |
 
 ## Outputs
 
