@@ -16,7 +16,7 @@ resource "aws_internet_gateway" "main" {
 }
 
 resource "aws_eip" "main" {
-  count             = length(var.vpc_nat_gateway_subnets.cidr)
+  count = length(var.vpc_nat_gateway_subnets.cidr)
   tags = {
     Name = "${local.project}-natgw-${count.index}"
     Zone = data.aws_availability_zones.available.names[count.index]
@@ -151,7 +151,7 @@ resource "aws_route_table" "compute" {
   }
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = element(aws_nat_gateway.main[*].id, count.index)
   }
 

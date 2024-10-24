@@ -40,8 +40,7 @@ module "ec2_instance_dataexfiltration_one" {
   instance_type = "t3a.nano"
   ami           = data.aws_ami.aws.id
 
-  subnet_id              = element(aws_subnet.compute[*].id, 0)
-  # vpc_security_group_ids = [module.security_group_dataexfiltration_one.security_group_id]
+  subnet_id = element(aws_subnet.compute[*].id, 0)
 
   create_iam_instance_profile = true
   iam_role_description        = "IAM role for first EC2 instance"

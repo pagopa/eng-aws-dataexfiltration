@@ -1,15 +1,3 @@
-# data "aws_subnets" "firewall" {
-#   depends_on = [module.vpc_dataexfiltration]
-#   filter {
-#     name = "tag:Name"
-#     values = [
-#       "${local.project}-public-fw-1",
-#       "${local.project}-public-fw-2",
-#       "${local.project}-public-fw-3",
-#     ]
-#   }
-# }
-
 module "network_firewall_dataexfiltration" {
   source  = "terraform-aws-modules/network-firewall/aws"
   version = "1.0.1"

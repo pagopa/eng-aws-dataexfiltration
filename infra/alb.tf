@@ -48,13 +48,13 @@ resource "aws_lb_listener" "main" {
   protocol          = "HTTP"
 
   default_action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.lambda_proxy.arn
   }
 }
 
 resource "aws_lb_target_group_attachment" "lambda_proxy_attachment" {
-  depends_on = [ aws_lambda_permission.lambda_proxy_lb_main ]
+  depends_on       = [aws_lambda_permission.lambda_proxy_lb_main]
   target_group_arn = aws_lb_target_group.lambda_proxy.arn
   target_id        = aws_lambda_function.lambda_proxy.arn
 }
