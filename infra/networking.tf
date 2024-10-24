@@ -41,7 +41,7 @@ resource "aws_subnet" "load_balancer" {
   count                   = length(var.vpc_load_balancer_subnets.cidr)
   availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
   cidr_block              = var.vpc_load_balancer_subnets.cidr[count.index]
-  map_public_ip_on_launch = var.vpc_load_balancer_subnets.type == "public" ? true : false
+  map_public_ip_on_launch = true
   vpc_id                  = aws_vpc.main.id
   tags = {
     Name = "${local.project}-${var.vpc_load_balancer_subnets.name}-${count.index}"
@@ -53,7 +53,7 @@ resource "aws_subnet" "firewall" {
   count                   = length(var.vpc_firewall_subnets.cidr)
   availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
   cidr_block              = var.vpc_firewall_subnets.cidr[count.index]
-  map_public_ip_on_launch = var.vpc_firewall_subnets.type == "public" ? true : false
+  map_public_ip_on_launch = true
   vpc_id                  = aws_vpc.main.id
   tags = {
     Name = "${local.project}-${var.vpc_firewall_subnets.name}-${count.index}"
@@ -65,7 +65,7 @@ resource "aws_subnet" "nat_gateway" {
   count                   = length(var.vpc_nat_gateway_subnets.cidr)
   availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
   cidr_block              = var.vpc_nat_gateway_subnets.cidr[count.index]
-  map_public_ip_on_launch = var.vpc_nat_gateway_subnets.type == "public" ? true : false
+  map_public_ip_on_launch = true
   vpc_id                  = aws_vpc.main.id
   tags = {
     Name = "${local.project}-${var.vpc_nat_gateway_subnets.name}-${count.index}"
@@ -77,7 +77,7 @@ resource "aws_subnet" "compute" {
   count                   = length(var.vpc_compute_subnets.cidr)
   availability_zone_id    = data.aws_availability_zones.available.zone_ids[count.index]
   cidr_block              = var.vpc_compute_subnets.cidr[count.index]
-  map_public_ip_on_launch = var.vpc_compute_subnets.type == "public" ? true : false
+  map_public_ip_on_launch = false
   vpc_id                  = aws_vpc.main.id
   tags = {
     Name = "${local.project}-${var.vpc_compute_subnets.name}-${count.index}"
@@ -204,12 +204,9 @@ resource "aws_route_table" "load_balancer" {
     gateway_id = "local"
   }
 
-  dynamic "route" {
-    for_each = var.vpc_load_balancer_subnets.type == "public" ? ["dummy"] : []
-    content {
-      cidr_block = "0.0.0.0/0"
-      gateway_id = aws_internet_gateway.main.id
-    }
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
   }
 
   tags = {

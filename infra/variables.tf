@@ -29,12 +29,10 @@ variable "vpc_nat_gateway_subnets" {
   type = object({
     name = string
     cidr = list(string)
-    type = string
   })
   default = {
     name = "natgw"
     cidr = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-    type = "public"
   }
 }
 
@@ -43,12 +41,10 @@ variable "vpc_firewall_subnets" {
   type = object({
     name = string
     cidr = list(string)
-    type = string
   })
   default = {
     name = "fw"
     cidr = ["10.0.104.0/24", "10.0.105.0/24", "10.0.106.0/24"]
-    type = "public"
   }
 }
 
@@ -57,12 +53,10 @@ variable "vpc_load_balancer_subnets" {
   type = object({
     name = string
     cidr = list(string)
-    type = string
   })
   default = {
     name = "lb"
     cidr = ["10.0.107.0/24", "10.0.108.0/24", "10.0.109.0/24"]
-    type = "public"
   }
 }
 
@@ -71,11 +65,9 @@ variable "vpc_compute_subnets" {
   type = object({
     name = string
     cidr = list(string)
-    type = string
   })
   default = {
     name = "compute"
     cidr = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-    type = "private"
   }
 }
