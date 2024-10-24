@@ -67,11 +67,11 @@ resource "aws_networkfirewall_firewall_policy" "switch" {
   name = "${local.project}-policy-switch"
 
   firewall_policy {
+    stateless_default_actions          = ["aws:pass"]
+    stateless_fragment_default_actions = ["aws:pass"]
     stateful_engine_options {
       rule_order = "STRICT_ORDER"
     }
-    stateless_default_actions          = ["aws:pass"]
-    stateless_fragment_default_actions = ["aws:pass"]
   }
 }
 
