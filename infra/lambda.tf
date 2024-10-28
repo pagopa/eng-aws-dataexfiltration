@@ -59,7 +59,7 @@ module "security_group_dataexfiltration_lambda_proxy" {
 
   name        = "${local.project}-securitygroup-lambda-proxy"
   description = "Allow ingress/egress"
-  vpc_id      = module.vpc_dataexfiltration.vpc_id
+  vpc_id      = aws_vpc.main.id
 
   ingress_with_cidr_blocks = [
     {
@@ -97,7 +97,7 @@ resource "aws_lambda_function" "lambda_proxy" {
   layers           = [aws_lambda_layer_version.tls_inspection.arn]
   source_code_hash = data.archive_file.lambda_proxy.output_base64sha512
   vpc_config {
-    subnet_ids         = module.vpc_dataexfiltration.private_subnets
+    subnet_ids         = aws_subnet.compute[*].id
     security_group_ids = [module.security_group_dataexfiltration_lambda_proxy.security_group_id]
   }
   environment {
