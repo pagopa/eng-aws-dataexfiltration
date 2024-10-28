@@ -16,7 +16,7 @@ resource "aws_route53_resolver_firewall_rule_group_association" "vpc_rule_group_
   name                   = "vpc-rule-${local.project}"
   firewall_rule_group_id = aws_route53_resolver_firewall_rule_group.rule_group_dataexfiltration.id
   priority               = 102
-  vpc_id                 = module.vpc_dataexfiltration.vpc_id
+  vpc_id                 = aws_vpc.main.id
 }
 
 resource "aws_route53_resolver_firewall_rule" "dns_fw_allow_dataexfiltration" {

@@ -29,5 +29,16 @@ def lambda_handler(event, context):
         r_body = sys.exc_info()[0]
         r_status_code = 500
 
+    response = {
+		"statusCode": 200,
+		"statusDescription": "200 OK",
+		"isBase64Encoded": False,
+		"headers": {
+			"Content-Type": "text/plain; charset=utf-8"
+	    }
+	}
+
+    response['body'] = r_body
+
     # Return response
-    return {"url": r_url, "status_code": r_status_code, "body": r_body}
+    return response

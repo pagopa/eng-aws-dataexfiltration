@@ -82,7 +82,7 @@ data "archive_file" "tls_inspection_ca_certificate" {
   type                    = "zip"
   source_content          = tls_self_signed_cert.tls_inspection.cert_pem
   source_content_filename = "cert.pem"
-  output_path             = "./tls-certificate-ca-certificate.zip"
+  output_path             = "./.terraform/tls-certificate-ca-certificate.zip"
 }
 
 resource "aws_s3_object" "tls_inspection_ca_certificate" {
