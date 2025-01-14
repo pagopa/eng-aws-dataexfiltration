@@ -8,12 +8,12 @@ terraform {
     }
   }
 
-  # backend "s3" {
-  #   bucket         = "terraform-backend-20230207141844477000000001"
-  #   key            = "dataexfiltration/main/tfstate-pasquale"
-  #   region         = "eu-south-1"
-  #   dynamodb_table = "terraform-lock"
-  # }
+  backend "s3" {
+    bucket         = "terraform-backend-20230207141844477000000001"
+    key            = "dataexfiltration/main/tfstate-mauro"
+    region         = "eu-south-1"
+    dynamodb_table = "terraform-lock"
+  }
 }
 
 provider "aws" {
