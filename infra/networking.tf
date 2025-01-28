@@ -96,10 +96,10 @@ resource "aws_route_table" "nat_gateway" {
     gateway_id = "local"
   }
 
-  route {
-    cidr_block      = "0.0.0.0/0"
-    vpc_endpoint_id = local.firewall_endpoint_ids[count.index]
-  }
+  # route {
+  #   cidr_block      = "0.0.0.0/0"
+  #   vpc_endpoint_id = local.firewall_endpoint_ids[count.index]
+  # }
 
   tags = {
     Name = "${local.project}-${var.vpc_nat_gateway_subnets.name}-rt-${count.index}"
@@ -169,21 +169,21 @@ resource "aws_route_table_association" "compute" {
 }
 
 resource "aws_route_table" "internet_gateway" {
-  depends_on = [module.network_firewall_dataexfiltration]
-  vpc_id     = aws_vpc.main.id
+  #depends_on = [module.network_firewall_dataexfiltration]
+  vpc_id = aws_vpc.main.id
 
   route {
     cidr_block = var.vpc_cidr_block
     gateway_id = "local"
   }
 
-  dynamic "route" {
-    for_each = range(length(var.vpc_nat_gateway_subnets.cidr))
-    content {
-      cidr_block      = var.vpc_nat_gateway_subnets.cidr[route.key]
-      vpc_endpoint_id = local.firewall_endpoint_ids[route.key]
-    }
-  }
+  # dynamic "route" {
+  #   for_each = range(length(var.vpc_nat_gateway_subnets.cidr))
+  #   content {
+  #     cidr_block      = var.vpc_nat_gateway_subnets.cidr[route.key]
+  #     vpc_endpoint_id = local.firewall_endpoint_ids[route.key]
+  #   }
+  # }
 
   tags = {
     Name = "${local.project}-igw-rt"
