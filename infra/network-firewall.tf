@@ -84,7 +84,7 @@ resource "aws_networkfirewall_firewall_policy" "dataexfiltration" {
     stateful_engine_options {
       rule_order = "STRICT_ORDER"
     }
-    # stateful_default_actions = ["aws:drop_strict", "aws:alert_strict"]
+    stateful_default_actions = ["aws:drop_established", "aws:alert_strict"]
     stateful_rule_group_reference {
       resource_arn = aws_networkfirewall_rule_group.stateful_dataexfiltration.arn
       priority     = 1
@@ -103,8 +103,15 @@ resource "aws_networkfirewall_rule_group" "stateful_dataexfiltration" {
     stateful_rule_options {
       rule_order = "STRICT_ORDER"
     }
+    # rules_source {
+    #   rules_string = file("${path.module}/suricata.txt")
+    # }
     rules_source {
-      rules_string = file("${path.module}/suricata.txt")
+      rules_source_list {
+        generated_rules_type = "ALLOWLIST"
+        target_types         = ["TLS_SNI"]
+        targets              = [".pagopa.it"]
+      }
     }
   }
 }
